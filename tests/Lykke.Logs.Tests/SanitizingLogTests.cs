@@ -5,27 +5,24 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Common.Log;
 using Lykke.Common.Log;
-using Lykke.Logs.Loggers.LykkeConsole;
-using Lykke.Logs.Loggers.LykkeSanitizing;
+using Lykke.Logs.LykkeSanitizing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using Xunit;
-using IConsole = Lykke.Logs.Loggers.LykkeConsole.IConsole;
 using Level = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Lykke.Logs.Tests
 {
     public class SanitizingLogTests
     {
-        private IConsole _console;
         private ISanitizingLog _log;
 
         public SanitizingLogTests()
         {
-            _console = Substitute.For<IConsole>();
-            _log = new Log(new LykkeConsoleLoggerProvider(new ConsoleLoggerOptions(), new ConsoleLogMessageWriter(_console)).CreateLogger("Test"), Substitute.For<IHealthNotifier>())
-                .Sanitize();
+            var lf = new LoggerFactory();
+            _log = new Log(lf.CreateLogger("test"), Substitute.For<IHealthNotifier>()).Sanitize();
         }
 
         [Fact]
@@ -69,7 +66,7 @@ namespace Lykke.Logs.Tests
 
             // Assert
 
-            var writeMethodCalls = _console.ReceivedCalls()
+            var writeMethodCalls = _log.ReceivedCalls()
                 .Where(c => c.GetMethodInfo().Name.StartsWith("Write"));
 
             Assert.NotEmpty(writeMethodCalls);
@@ -96,7 +93,7 @@ namespace Lykke.Logs.Tests
 
             // Assert
 
-            var writeMethodCalls = _console.ReceivedCalls()
+            var writeMethodCalls = _log.ReceivedCalls()
                 .Where(c => c.GetMethodInfo().Name.StartsWith("Write"));
 
             Assert.NotEmpty(writeMethodCalls);

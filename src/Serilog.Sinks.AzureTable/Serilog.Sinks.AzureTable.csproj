@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Version>1.0.0</Version>
+    <Authors>Lykke</Authors>
+    <Company>LykkeBusiness</Company>
+    <Description>Serilog.Sinks.AzureTable is a library to save logging information from https://github.com/serilog/serilog to Azure TableStorage. </Description>
+    <PackageProjectUrl>https://github.com/LykkeBusinessPlatform/Lykke.Logs</PackageProjectUrl>
+    <PackageIconUrl>https://avatars3.githubusercontent.com/u/14153330?v=3&amp;s=200</PackageIconUrl>
+    <RepositoryUrl>https://github.com/LykkeBusinessPlatform/Lykke.Logs.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>Lykke;LykkeBusiness</PackageTags>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageId>LykkeBiz.Serilog.Sinks.AzureTable</PackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Lykke.AzureStorage" Version="8.13.4" />
+    <PackageReference Include="Lykke.SettingsReader" Version="5.3.0" />
+    <PackageReference Include="Serilog" Version="2.9.0" />
+    <PackageReference Include="Serilog.Sinks.PeriodicBatching" Version="2.3.0" />
+  </ItemGroup>
+
+</Project>

@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Threading;
+using Common.Log;
 using Lykke.Common.Log;
 using Lykke.Logs;
-using Lykke.Logs.Loggers.LykkeConsole;
 using Microsoft.Extensions.Logging;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
@@ -14,11 +14,12 @@ namespace ConsoleLoggerRunner
         {
             Environment.SetEnvironmentVariable("ENV_INFO", "test");
 
-            using (var provider = new LykkeConsoleLoggerProvider(new ConsoleLoggerOptions(), ConsoleLogMessageWriter.Instance))
+            using (var lf = LoggerFactory.Create(builder => builder.AddConsole()))
+            using (var provider = new LogFactory(lf, new HealthNotifier(lf)))
             {
-                var logger = new ErrorsHandlingLoggerDecorator(provider.CreateLogger("ComponentName"));
+                var logger = provider.CreateLog("ComponentName");
 
-                logger.LogInformation("test");
+                logger.Info("test");
 
                 for (int i = 0; i < 100; i++)
                 {
@@ -46,13 +47,14 @@ namespace ConsoleLoggerRunner
 
 
                 Thread.Sleep(100);
-                using (var scopedProvider = new LykkeConsoleLoggerProvider(new ConsoleLoggerOptions(), ConsoleLogMessageWriter.Instance))
+
+                using (var scopedProvider = new LogFactory(lf, new HealthNotifier(lf)))
                 {
-                    var scopedLogger = scopedProvider.CreateLogger("ScopedComponent");
+                    var scopedLogger = scopedProvider.CreateLog("ScopedComponent");
                     scopedLogger.Log(LogLevel.Information, new EventId(0), GetState(), null,
                         (parameters, exception) => "Begin scope");
 
-                    using (scopedLogger.BeginScope("Hi I am a scope {0}", 1))
+                    using (scopedLogger.BeginScope("Hi I am a scope {0}"))
                     {
                         scopedLogger.Log(LogLevel.Information, new EventId(0), GetState(), null,
                             (parameters, exception) => parameters.Message);
