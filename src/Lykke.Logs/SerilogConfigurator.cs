@@ -7,70 +7,114 @@ using Serilog.Sinks.Elasticsearch;
 
 namespace Lykke.Logs
 {
-    public static class SerilogConfigurator
+    public class SerilogConfigurator
     {
-        public static void ConfigureSerilogConsole()
+        private LoggerConfiguration _config;
+
+        public SerilogConfigurator()
         {
-            var config = new LoggerConfiguration()
-                .AddFilters()
-                .AddProperties()
+            _config = new LoggerConfiguration()
                 .Enrich.FromLogContext()
                 .Enrich.WithExceptionDetails()
                 .WriteTo.Console();
 
-            Serilog.Log.Logger = config.CreateLogger();
+            AddFilters();
+            AddProperties();
         }
 
-        public static void ConfigureSerilog(
-            string azureTableConnectionString = null,
-            string logsTableName = null,
-            string azureQueueConnectionString = null,
-            string queueName = null,
-            string elasticSearchUrl = null)
+        public void Configure()
         {
-            var config = new LoggerConfiguration()
-                .AddFilters()
-                .AddProperties()
-                .Enrich.FromLogContext()
-                .Enrich.WithExceptionDetails()
-                .WriteTo.Console();
-
-            if (!string.IsNullOrWhiteSpace(azureTableConnectionString))
-            {
-                if (string.IsNullOrWhiteSpace(logsTableName))
-                    throw new ArgumentNullException(nameof(logsTableName));
-                config = config.WriteTo.AzureTable(azureTableConnectionString, logsTableName);
-            }
-
-            if (!string.IsNullOrWhiteSpace(azureQueueConnectionString))
-            {
-                if (string.IsNullOrWhiteSpace(queueName))
-                    throw new ArgumentNullException(nameof(queueName));
-                config = config.WriteTo.AzureQueueStorage(
-                    formatter: new AzureSlackQueueFormatter(),
-                    connectionString: azureQueueConnectionString,
-                    storageQueueName: queueName,
-                    separateQueuesByLogLevel: true);
-            }
-
-            if (!string.IsNullOrWhiteSpace(elasticSearchUrl))
-                config = config.WriteTo.Elasticsearch(
-                    elasticSearchUrl,
-                    autoRegisterTemplate: true,
-                    autoRegisterTemplateVersion: AutoRegisterTemplateVersion.ESv7);
-
-            Serilog.Log.Logger = config.CreateLogger();
+            Serilog.Log.Logger = _config.CreateLogger();
         }
 
-        private static LoggerConfiguration AddFilters(this LoggerConfiguration loggerConfiguration)
+        public SerilogConfigurator AddAzureTable(string azureTableConnectionString, string logsTableName)
         {
-            return loggerConfiguration
+            if (string.IsNullOrWhiteSpace(azureTableConnectionString))
+                throw new ArgumentNullException(nameof(azureTableConnectionString));
+            if (string.IsNullOrWhiteSpace(logsTableName))
+                throw new ArgumentNullException(nameof(logsTableName));
+
+            _config = _config.WriteTo.AzureTable(azureTableConnectionString, logsTableName);
+
+            return this;
+        }
+
+        public SerilogConfigurator AddAzureQueue(string azureQueueConnectionString, string queueName)
+        {
+            if (string.IsNullOrWhiteSpace(azureQueueConnectionString))
+                throw new ArgumentNullException(nameof(azureQueueConnectionString));
+            if (string.IsNullOrWhiteSpace(queueName))
+                throw new ArgumentNullException(nameof(queueName));
+
+            _config = _config.WriteTo.AzureQueueStorage(
+                formatter: new AzureSlackQueueFormatter(),
+                connectionString: azureQueueConnectionString,
+                storageQueueName: queueName,
+                separateQueuesByLogLevel: true);
+
+            return this;
+        }
+
+        public SerilogConfigurator AddElasticsearch(string elasticSearchUrl)
+        {
+            if (string.IsNullOrWhiteSpace(elasticSearchUrl))
+                throw new ArgumentNullException(nameof(elasticSearchUrl));
+
+            _config = _config.WriteTo.Elasticsearch(
+                elasticSearchUrl,
+                autoRegisterTemplate: true,
+                autoRegisterTemplateVersion: AutoRegisterTemplateVersion.ESv7);
+
+            return this;
+        }
+
+        public SerilogConfigurator AddTelegram(
+            string botToken,
+            string chatId,
+            LogEventLevel minimalLevel)
+        {
+            if (string.IsNullOrWhiteSpace(botToken))
+                throw new ArgumentNullException(nameof(botToken));
+            if (string.IsNullOrWhiteSpace(chatId))
+                throw new ArgumentNullException(nameof(chatId));
+
+            _config = _config.WriteTo.Telegram(
+                botToken: botToken,
+                chatId: chatId,
+                restrictedToMinimumLevel: minimalLevel);
+
+            return this;
+        }
+
+        public void AddProperties(params (string, Func<object>)[] propertiesResolvers)
+        {
+            for (int i = 0; i < propertiesResolvers.Length; ++i)
+            {
+                var (propertyName, propertyValueFunc) = propertiesResolvers[i];
+                _config = _config
+                    .Enrich.WithProperty(propertyName, propertyValueFunc());
+            }
+        }
+
+        public void AddFilters(params (string, LogEventLevel)[] filters)
+        {
+            for (int i = 0; i < filters.Length; ++i)
+            {
+                var (source, logLevel) = filters[i];
+                _config = _config
+                    .MinimumLevel.Override(source, logLevel);
+            }
+        }
+
+        private void AddFilters()
+        {
+            _config = _config
                 .MinimumLevel.Override("System", LogEventLevel.Warning);
         }
 
-        private static LoggerConfiguration AddProperties(this LoggerConfiguration loggerConfiguration)
+        private void AddProperties()
         {
-            return loggerConfiguration
+            _config = _config
                 .Enrich.WithProperty("AppName", AppEnvironment.Name)
                 .Enrich.WithProperty("AppVersion", AppEnvironment.Version)
                 .Enrich.WithProperty("EnvInfo", AppEnvironment.EnvInfo);
