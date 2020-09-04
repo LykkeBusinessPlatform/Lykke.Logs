@@ -1,5 +1,6 @@
 ﻿using System;
 using Lykke.Common;
+using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Events;
 using Serilog.Exceptions;
@@ -10,21 +11,39 @@ namespace Lykke.Logs
     public class SerilogConfigurator
     {
         private LoggerConfiguration _config;
+        private bool _loadedFromConfig;
 
         public SerilogConfigurator()
         {
-            _config = new LoggerConfiguration()
-                .Enrich.FromLogContext()
-                .Enrich.WithExceptionDetails()
-                .WriteTo.Console();
-
-            AddFilters();
-            AddProperties();
+            _config = new LoggerConfiguration();
         }
 
         public void Configure()
         {
+            if (!_loadedFromConfig)
+            {
+                _config = _config
+                    .Enrich.FromLogContext()
+                    .Enrich.WithExceptionDetails()
+                    .WriteTo.Console();
+
+                AddFilters();
+                AddProperties();
+            }
+
             Serilog.Log.Logger = _config.CreateLogger();
+        }
+
+        public SerilogConfigurator AddFromConfiguration(IConfiguration configuration)
+        {
+            if (configuration == null)
+                throw new ArgumentNullException();
+
+            _config = _config.ReadFrom.Configuration(configuration);
+
+            _loadedFromConfig = true;
+
+            return this;
         }
 
         public SerilogConfigurator AddAzureTable(string azureTableConnectionString, string logsTableName)
