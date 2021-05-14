@@ -42,6 +42,9 @@ namespace Lykke.Logs
                     { nameof(LogEntryParameters.Process), logParams.Process },
                     { nameof(LogEntryParameters.Context), logParams.Context },
                     { nameof(LogEntryParameters.Message), logParams.Message },
+                    { nameof(LogEntryParameters.AppName), logParams.AppName },
+                    { nameof(LogEntryParameters.AppVersion), logParams.AppVersion },
+                    { nameof(LogEntryParameters.EnvInfo), logParams.EnvInfo },
                 };
                 _logger.Log(logLevel, eventId, newState, exception, _messageFormatter);
             }

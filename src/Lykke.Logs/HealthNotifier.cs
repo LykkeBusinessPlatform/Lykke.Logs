@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Lykke.Common;
 using Lykke.Common.Log;
 using Microsoft.Extensions.Logging;
 
@@ -25,10 +26,13 @@ namespace Lykke.Logs
         {
             var state = new Dictionary<string, object>()
                 {
+                    { "Monitor", true },
                     { "{OriginalFormat}", "{Message:l}"},
                     { nameof(LogEntryParameters.Context), context },
                     { nameof(LogEntryParameters.Message), healthMessage },
-                    { "Monitor", true },
+                    { nameof(LogEntryParameters.AppName), AppEnvironment.Name },
+                    { nameof(LogEntryParameters.AppVersion), AppEnvironment.Version },
+                    { nameof(LogEntryParameters.EnvInfo), AppEnvironment.EnvInfo },
                 };
             _logger.Log(LogLevel.Warning, 0, state, null, _messageFormatter);
         }
