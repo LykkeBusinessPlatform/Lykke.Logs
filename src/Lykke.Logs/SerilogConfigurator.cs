@@ -25,7 +25,7 @@ namespace Lykke.Logs
                 _config = _config
                     .Enrich.FromLogContext()
                     .Enrich.WithExceptionDetails()
-                    .WriteTo.Console();
+                    .WriteTo.Console(outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] {Message} <s:{SourceContext}>{NewLine}{Exception}");
 
                 AddFilters();
                 AddProperties();
