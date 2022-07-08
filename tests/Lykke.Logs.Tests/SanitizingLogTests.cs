@@ -78,7 +78,7 @@ namespace Lykke.Logs.Tests
         public void ShouldSanitizeAllPatterns()
         {
             // Arrange
-
+            
             _log
                 .AddSanitizingFilter(new Regex(@"""privateKey"": ""(.*)"""), "\"privateKey\": \"*\"")
                 .AddSanitizingFilter(new Regex(@"""password"": ""(.*)"""), "\"password\": \"*\"");
