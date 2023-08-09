@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
-    <Version>1.0.0</Version>
+    <Version>9.1.1</Version>
     <Authors>Lykke</Authors>
     <Company>LykkeBusiness</Company>
     <Description>Lykke.Logs fork adapted to use Serilog under the hood</Description>
