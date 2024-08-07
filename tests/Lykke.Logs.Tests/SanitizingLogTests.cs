@@ -1,32 +1,40 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+
 using Common.Log;
+
 using Lykke.Common.Log;
 using Lykke.Logs.LykkeSanitizing;
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+
 using NSubstitute;
+
 using Xunit;
+
 using Level = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Lykke.Logs.Tests
 {
     public class SanitizingLogTests
     {
-        private ISanitizingLog _log;
+        private readonly ISanitizingLog _log;
+        private readonly ILogger _internalLog;
 
         public SanitizingLogTests()
         {
-            var lf = new LoggerFactory();
-            _log = new Log(lf.CreateLogger("test"), Substitute.For<IHealthNotifier>()).Sanitize();
+            _internalLog = Substitute.For<ILogger>();
+            _log = new Log(_internalLog, Substitute.For<IHealthNotifier>()).Sanitize();
         }
 
         [Fact]
-        public void ShouldSanitizeLog()
+        public async Task ShouldSanitizeLog()
         {
             // Arrange
 
@@ -57,28 +65,34 @@ namespace Lykke.Logs.Tests
                         null)
                     .ToArray();
 
-                var task = m.Invoke(m.IsStatic ? null : _log, args) as Task;
-                if (task != null)
-                {
-                    task.Wait();
-                }
+                if (m.Invoke(m.IsStatic ? null : _log, args) is Task task)
+                    await task;
             }
 
             // Assert
 
-            var writeMethodCalls = _log.ReceivedCalls()
-                .Where(c => c.GetMethodInfo().Name.StartsWith("Write"));
+            var writeMethodCalls = _internalLog.ReceivedCalls()
+                .Where(c => c.GetMethodInfo().Name.StartsWith("Log"))
+                .ToList();
 
             Assert.NotEmpty(writeMethodCalls);
-            Assert.DoesNotContain(writeMethodCalls, 
-                c => c.GetArguments().OfType<string>().Any(a => a.Contains(secret)));
+            Assert.DoesNotContain(writeMethodCalls,
+                c => c.GetArguments()
+                    // We are looking for generic method argument LogEntryParameters
+                    // It is introduced as a dictionary with string keys and object values
+                    .OfType<Dictionary<string, object>>()
+                    .Any(a =>
+                    {
+                        var messageContains = a["Message"] is string message && message.Contains(secret);
+                        var contextContains = a["Context"] is string context && context.Contains(secret);
+                        return messageContains || contextContains;
+                    }));
         }
 
         [Fact]
         public void ShouldSanitizeAllPatterns()
         {
             // Arrange
-            
             _log
                 .AddSanitizingFilter(new Regex(@"""privateKey"": ""(.*)"""), "\"privateKey\": \"*\"")
                 .AddSanitizingFilter(new Regex(@"""password"": ""(.*)"""), "\"password\": \"*\"");
@@ -88,17 +102,20 @@ namespace Lykke.Logs.Tests
             var patternedObject = new { privateKey = secret, password = secret };
 
             // Act
-
             _log.Info(patternedString, patternedObject);
 
             // Assert
+            var logMethodCalls = _internalLog.ReceivedCalls()
+                .Where(c => c.GetMethodInfo().Name.StartsWith("Log"))
+                .ToList();
 
-            var writeMethodCalls = _log.ReceivedCalls()
-                .Where(c => c.GetMethodInfo().Name.StartsWith("Write"));
-
-            Assert.NotEmpty(writeMethodCalls);
-            Assert.DoesNotContain(writeMethodCalls,
-                c => c.GetArguments().OfType<string>().Any(a => a.Contains(secret)));
+            Assert.NotEmpty(logMethodCalls);
+            Assert.DoesNotContain(logMethodCalls,
+                c => c.GetArguments()
+                    // We are looking for generic method argument LogEntryParameters
+                    // It is introduced as a dictionary with string keys and object values
+                    .OfType<Dictionary<string, object>>()
+                    .Any(a => ((string)a["Message"]).Contains(secret) || ((string)a["Context"]).Contains(secret)));
         }
 
         [Fact]
