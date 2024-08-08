@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>net8.0</TargetFrameworks>
     <Version>9.1.1</Version>
     <Authors>Lykke</Authors>
     <Company>LykkeBusiness</Company>
@@ -13,11 +13,11 @@
     <PackageTags>Lykke;LykkeBusiness</PackageTags>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackageId>LykkeBiz.Logs</PackageId>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <NoWarn>1701;1702;1705;1591</NoWarn>
-    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -35,15 +35,9 @@
   </ItemGroup>
 
   <ItemGroup Label="dotnet pack instructions">
-    <Content Include="$(OutputPath)$(AssemblyName).pdb" Condition="$(TargetFramework)=='netstandard2.0'">
+    <Content Include="$(OutputPath)$(AssemblyName).pdb" Condition="$(TargetFramework)=='net8.0'">
       <Pack>true</Pack>
-      <PackagePath>lib/netstandard2.0</PackagePath>
-    </Content>
-  </ItemGroup>
-  <ItemGroup Label="dotnet pack instructions">
-    <Content Include="$(OutputPath)$(AssemblyName).pdb" Condition="$(TargetFramework)=='netstandard2.1'">
-      <Pack>true</Pack>
-      <PackagePath>lib/netstandard2.1</PackagePath>
+      <PackagePath>lib/net8.0</PackagePath>
     </Content>
   </ItemGroup>
 </Project>
